@@ -107,6 +107,12 @@ class Socket(EncoderMixin):
     def close(self, linger=None):
         return self.zmqsock.close(linger)
 
+    def connect(self, address):
+        return self.zmqsock.connect(address)
+
+    def bind(self, address):
+        return self.zmqsock.bind(address)
+
 class Hub(EncoderMixin):
     """For creating sockets of some time and registering them."""
 
@@ -147,36 +153,36 @@ class Sub(Hub):
         return socket
 
     def socket(self):
-        return self._socket(zmq.SUB)
+        return self._wrap(self._socket(zmq.SUB))
 
     def connected(self, address, subscriptions=None):
         """Create a SUB socket that connects to address."""
         
         socket = self._sub_socket(subscriptions)
         socket.connect(address)
-        return self._wrap(socket)
+        return socket
 
     def bound(self, address, subscriptions=None):
         """Create a SUB socket bound to address."""
         socket = self._sub_socket(subscriptions)
         socket.bind(address)
-        return self._wrap(socket)
+        return socket
 
 class Pub(Hub):
     """Hub for creating sockets of the PUB type."""
 
     def socket(self):
-        return self._socket(zmq.PUB)
+        return self._wrap(self._socket(zmq.PUB))
 
     def bound(self, address):
         socket = self.socket()
         socket.bind(address)
-        return self._wrap(socket)
+        return socket
 
     def connected(self, address):
         socket = self.socket()
         socket.connect(address)
-        return self._wrap(socket)
+        return socket
 
 class NiceZmq(EncoderMixin):
     """Abstraction over a pyzmq context.
