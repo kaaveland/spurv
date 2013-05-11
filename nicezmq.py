@@ -93,15 +93,16 @@ class Socket(EncoderMixin):
         """
 
         items = self.zmqsock.recv_multipart(flags, copy, track)
+        if not decode:
+            return items
         try:
-            __ = iter(decode)
-            return [_decode(item, self.encoding) if index in decode else item
-                    for index, item in enumerate(items)]
+            iter(decode)
         except TypeError:
             if decode:
                 return [_decode(item, self.encoding) for item in items]
-            else:
-                return items
+        else:
+            return [_decode(item, self.encoding) if index in decode else item
+                    for index, item in enumerate(items)]
 
     def close(self, linger=None):
         return self.zmqsock.close(linger)
