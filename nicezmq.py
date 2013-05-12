@@ -188,12 +188,12 @@ class Sub(Hub):
     def socket(self):
         return self._wrap(self._socket(zmq.SUB))
 
-    def connected_subscriber(self, address, subscriptions=None):
+    def connected_subscriber(self, address, subscriptions=''):
         socket = self.connected(address)
         self._subscribe(socket, subscriptions)
         return socket
 
-    def bound_subscriber(self, address, subscriptions=None):
+    def bound_subscriber(self, address, subscriptions=''):
         socket = self.bound(address)
         self._subscribe(socket, subscriptions)
         return socket
@@ -214,7 +214,7 @@ class Rep(Hub):
     def socket(self):
         return self._wrap(self._socket(zmq.REP))
 
-class NiceZmq(EncoderMixin):
+class NiceZMQ(EncoderMixin):
     """Abstraction over a pyzmq context.
     """
 
@@ -226,7 +226,7 @@ class NiceZmq(EncoderMixin):
         Arguments:
         - `ctx`: A zeromq context.
         """
-        super(NiceZmq, self).__init__()
+        super(NiceZMQ, self).__init__()
         if ctx is None:
             self.ctx = zmq.Context()
         else:
@@ -235,6 +235,15 @@ class NiceZmq(EncoderMixin):
         for attr, cls in self.sock_types.items():
             setattr(self, attr,
                     cls(self.ctx, encoding=encoding, socket_class=socket_class))
+
+    def destroy(self):
+        self.ctx.destroy()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type_, value, traceback):
+        self.destroy()
 
     @property
     def sub(self):

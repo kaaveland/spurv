@@ -1,0 +1,17 @@
+* Remaining socket types [0/2]
+** TODO PULL/PUSH
+** TODO ROUTER/DEALER
+** TODO XPUB/XSUB
+** TODO PAIR
+* Abstractions for starting listeners
+** @context.sub.listener(bound=url) ?
+** @context.sub.listener(connected=url) ?
+** context.start_gevent() ?
+** context.start_threading() ?
+** @context.sub.on_error ?
+* Abstractions for socket options
+** Should hide options that are not valid for socket types?
+* Some sort of protocol specification support for transparent serialization/validation?
+** @context.rep.listener(bound=url)
+** @foo.accepts(Klass) ?
+** @foo.responds(Klass2) ?
