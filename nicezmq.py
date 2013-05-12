@@ -1,3 +1,10 @@
+# coding=utf-8
+# Copyright (c) 2013 Robin Kåveland Hansen
+#
+# This file is a part of nicezmq. It is distributed under the terms
+# of the modified BSD license. The full license is available in
+# LICENSE, distributed as part of this software.
+
 """
 Provides a few basic abstractions on top of pyzmq.
 
@@ -68,10 +75,15 @@ class Socket(EncoderMixin):
     def zmqsock(self):
         return self._zmqsock
 
+    @property
+    def connected(self):
+        return self._connected
+
     def __init__(self, zmqsock, encoding="utf-8"):
         super(Socket, self).__init__()
         self._zmqsock = zmqsock
         self.encoding = encoding
+        self._connected = False
 
     def send(self, content, flags=0, copy=True, track=False):
         """This accepts unicode and will use the encoding set on this
@@ -107,7 +119,8 @@ class Socket(EncoderMixin):
                     for index, item in enumerate(items)]
 
     def close(self, linger=None):
-        return self.zmqsock.close(linger)
+        self.zmqsock.close(linger)
+        self._connected = False
 
     def __exit__(self, type_, value, traceback):
         self.close()
@@ -116,10 +129,12 @@ class Socket(EncoderMixin):
         return self
 
     def connect(self, address):
-        return self.zmqsock.connect(address)
+        self.zmqsock.connect(address)
+        self._connected = True
 
     def bind(self, address):
-        return self.zmqsock.bind(address)
+        self.zmqsock.bind(address)
+        self._connected = True
 
 class Hub(EncoderMixin):
     """For creating sockets of some type and registering them."""

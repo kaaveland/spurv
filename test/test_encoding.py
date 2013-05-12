@@ -1,4 +1,9 @@
 # coding=utf-8
+# Copyright (c) 2013 Robin Kåveland Hansen
+#
+# This file is a part of nicezmq. It is distributed under the terms
+# of the modified BSD license. The full license is available in
+# LICENSE, distributed as part of this software.
 from nose import tools as test
 from nicezmq import u, bytes_type, EncoderMixin
 
