@@ -8,6 +8,7 @@
 from nose import tools as test
 from nicezmq import Hub, Sub, Pub, Socket, Req, Rep, u
 from zmq import Context
+from mock import Mock
 
 class destroying(object):
 
@@ -58,3 +59,25 @@ def test_repreq_simple_message_passing():
             reply.send(message)
             got = request.recv(decode=True)
             test.eq_(message, got)
+
+def test_sub_listen_for_howlers():
+    with destroying(Context()) as ctx:
+        sub = Sub(ctx)
+        @sub.listen("inproc://test", bind=True)
+        def foo():
+            pass
+        test.assert_in(foo.__name__, sub.handlers)
+        not_none = object()
+        spawner = Mock(return_value=not_none)
+        test.assert_in(not_none, sub.start(spawner))
+
+def test_rep_listen_for_howlers():
+    with destroying(Context()) as ctx:
+        rep = Rep(ctx)
+        @rep.listen("inproc://test")
+        def foo():
+            pass
+        test.assert_in(foo.__name__, rep.handlers)
+        not_none = object()
+        spawner = Mock(return_value=not_none)
+        test.assert_in(not_none, rep.start(spawner))

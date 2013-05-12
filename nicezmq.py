@@ -316,6 +316,10 @@ class NiceZMQ(EncoderMixin):
         self.destroy()
 
     @property
+    def context(self):
+        return self.ctx
+
+    @property
     def sub(self):
         """Hub for SUB sockets."""
         return self._sub
@@ -337,7 +341,6 @@ class NiceZMQ(EncoderMixin):
 
     def start(self, spawn):
         """Run forever, using spawn to create listeners."""
-
         threads = self.sub.start(spawn)
         threads.extend(self.rep.start(spawn))
         return threads

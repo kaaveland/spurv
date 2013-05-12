@@ -8,18 +8,16 @@ from zmq import green as zmq
 
 ctx = NiceZMQ(zmq.Context())
 
-@ctx.sub.listen("inproc://testing", subs="nothinggoeshere")
+@ctx.sub.listen("inproc://testing", subs="one")
 def print_message(message):
-    print message
+    print "Subscriber one", message
 
-@ctx.sub.listen("inproc://testing", subs="test")
+@ctx.sub.listen("inproc://testing", subs="two")
 def print_differently(message):
-    for item in message:
-        print item.encode(ctx.encoding)
+    print "Subscriber two", message
 
 @ctx.rep.listen("inproc://test-req", bind=False)
 def ack_message(message):
-    print "Acking ", message
     return ["Ack"] + message
 
 with ctx.pub.bound(ctx.endpoint(print_message)) as pub,\
@@ -27,13 +25,15 @@ with ctx.pub.bound(ctx.endpoint(print_message)) as pub,\
     def produce():
         while True:
             gevent.sleep(1)
-            pub.send(["test", str(random.random())])
+            if random.random() < 0.5:
+                pub.send(["one", str(random.random())])
+            else:
+                pub.send(["two", "Not random at all"])
     def request():
         while True:
-            print "Sending request"
             req.send(str(random.random()))
             gevent.sleep(1)
-            print req.recv()
+            print "Requestor", req.recv()
 
     greenlets = ctx.start(gevent.spawn_link)
     greenlets.append(gevent.spawn_link(produce))
