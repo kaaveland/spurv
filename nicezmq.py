@@ -136,19 +136,6 @@ class Socket(EncoderMixin):
         self.zmqsock.bind(address)
         self._connected = True
 
-def listen_forever(socket, handler, decode=True):
-    with socket:
-        while True:
-            message = socket.recv(decode=decode)
-            handler(message)
-
-def reply_forever(socket, handler, decode=True):
-    with socket:
-        while True:
-            message = socket.recv(decode=decode)
-            reply = handler(message)
-            socket.send(reply)
-
 class Hub(EncoderMixin):
     """For creating sockets of some type and registering them."""
 
@@ -201,7 +188,42 @@ class Hub(EncoderMixin):
 def bound_first(handlers):
     return reversed(sorted(handlers, key=lambda handler: handler["bind"]))
 
-class Sub(Hub):
+class HandlerMixin(object):
+
+    def _start_handler(self, spawn, spawnable, handler):
+        bind, addr = handler["bind"], handler["endpoint"]
+        fn = handler["handler"]
+        decode, subs = handler["decode"], handler.get("subs", None)
+        if bind:
+            if subs is not None:
+                sock = self.bound_subscriber(addr, subs)
+            else:
+                sock = self.bound(addr)
+        else:
+            if subs is not None:
+                sock = self.connected_subscriber(addr, subs)
+            else:
+                sock = self.connected(addr)
+        return spawn(spawnable, sock, fn, decode)
+
+    def start_handling(self, spawn, spawnable):
+        return [self._start_handler(spawn, spawnable, handler) for handler in
+                bound_first(self.handlers.values())]
+
+def reply_forever(socket, handler, decode=True):
+    with socket:
+        while True:
+            message = socket.recv(decode=decode)
+            reply = handler(message)
+            socket.send(reply)
+
+def listen_forever(socket, handler, decode=True):
+    with socket:
+        while True:
+            message = socket.recv(decode=decode)
+            handler(message)
+
+class Sub(Hub, HandlerMixin):
     """Hub for creating sockets of the SUB type."""
 
     def socket(self):
@@ -229,19 +251,8 @@ class Sub(Hub):
             return handler
         return listener
 
-    def _start_handler(self, spawn, handler):
-        bind, addr = handler["bind"], handler["endpoint"]
-        fn = handler["handler"]
-        decode, subs = handler["decode"], handler["subs"]
-        if bind:
-            sock = self.bound_subscriber(addr, subs)
-        else:
-            sock = self.connected_subscriber(addr, subs)
-        return spawn(listen_forever, sock, fn, decode)
-
     def start(self, spawn):
-        return [self._start_handler(spawn, handler) for handler in
-                bound_first(self.handlers.values())]
+        return self.start_handling(spawn, listen_forever)
 
 class Pub(Hub):
     """Hub for creating sockets of the PUB type."""
@@ -254,10 +265,24 @@ class Req(Hub):
     def socket(self):
         return self._wrap(self._socket(zmq.REQ))
 
-class Rep(Hub):
+class Rep(Hub, HandlerMixin):
 
     def socket(self):
         return self._wrap(self._socket(zmq.REP))
+
+    def listen(self, address, decode=True, bind=True):
+        def listener(handler):
+            self.handlers[handler.__name__] = {
+                "bind": bind,
+                "decode": decode,
+                "endpoint": address,
+                "handler": handler
+            }
+            return handler
+        return listener
+
+    def start(self, spawn):
+        return self.start_handling(spawn, reply_forever)
 
 class NiceZMQ(EncoderMixin):
     """Abstraction over a pyzmq context.
@@ -314,4 +339,17 @@ class NiceZMQ(EncoderMixin):
         """Run forever, using spawn to create listeners."""
 
         threads = self.sub.start(spawn)
+        threads.extend(self.rep.start(spawn))
         return threads
+
+    @property
+    def handlers(self):
+        handlers = {}
+        handlers.update(self.sub.handlers)
+        handlers.update(self.rep.handlers)
+        return handlers
+
+    def endpoint(self, handler):
+        if not isinstance(handler, string_types):
+            handler = handler.__name__
+        return self.handlers[handler]["endpoint"]
