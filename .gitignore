@@ -33,3 +33,10 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Virtualenvs things
+.tox
+.venv
+
+# Test-script
+run.py

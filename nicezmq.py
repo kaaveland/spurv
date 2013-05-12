@@ -23,6 +23,8 @@ else:
     unicode_type = str
     bytes_type = bytes
     def _decode(bs, encoding="utf-8"):
+        if isinstance(bs, unicode_type):
+            return bs
         return str(bs, encoding)
 
 u = _decode
@@ -201,7 +203,7 @@ class NiceZmq(EncoderMixin):
     """Abstraction over a pyzmq context.
     """
 
-    sock_types = {"sub": Sub, "pub": Pub, "req": Req, "rep": Rep}
+    sock_types = {"_sub": Sub, "_pub": Pub, "_req": Req, "_rep": Rep}
 
     def __init__(self, ctx=None, socket_class=Socket, encoding="utf-8"):
         """Initialize using the provided zeromq context.
@@ -218,3 +220,23 @@ class NiceZmq(EncoderMixin):
         for attr, cls in self.sock_types.items():
             setattr(self, attr,
                     cls(self.ctx, encoding=encoding, socket_class=socket_class))
+
+    @property
+    def sub(self):
+        """Hub for SUB sockets."""
+        return self._sub
+
+    @property
+    def pub(self):
+        """Hub for PUB sockets."""
+        return self._pub
+
+    @property
+    def req(self):
+        """Hub for REQ sockets."""
+        return self._req
+
+    @property
+    def rep(self):
+        """Hub for REP sockets."""
+        return self._rep

@@ -31,16 +31,16 @@ def test_hubs_should_create_wrapped_sockets():
 
 url = "inproc://testing"
 
-def test_pubsub_message_passing():
+def test_pubsub_simple_message_passing():
     with destroying(Context()) as ctx:
         pub, sub = Pub(ctx), Sub(ctx)
         with pub.bound(url) as publisher, sub.connected_subscriber(url, '') as subscriber:
             publisher.send("test")
-            test.eq_(["test"], subscriber.recv())
+            test.eq_(["test"], subscriber.recv(decode=True))
             publisher.send(["test", "test"])
-            test.eq_(["test", "test"], subscriber.recv())
+            test.eq_(["test", "test"], subscriber.recv(decode=True))
 
-def test_repreq_message_passing():
+def test_repreq_simple_message_passing():
     with destroying(Context()) as ctx:
         req, rep = Req(ctx), Rep(ctx)
         with rep.bound(url) as reply, req.connected(url) as request:
