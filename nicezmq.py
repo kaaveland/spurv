@@ -107,6 +107,12 @@ class Socket(EncoderMixin):
     def close(self, linger=None):
         return self.zmqsock.close(linger)
 
+    def __exit__(self, type_, value, traceback):
+        self.close()
+
+    def __enter__(self):
+        return self
+
     def connect(self, address):
         return self.zmqsock.connect(address)
 
@@ -120,7 +126,7 @@ class Hub(EncoderMixin):
     def context(self):
         return self.ctx
 
-    def __init__(self, ctx, socket_class, encoding="utf-8"):
+    def __init__(self, ctx, socket_class=Socket, encoding="utf-8"):
         super(Hub, self).__init__()
         self.ctx = ctx
         self.encoding = encoding
@@ -134,38 +140,32 @@ class Hub(EncoderMixin):
     def _socket(self, socktype):
         return self.context.socket(socktype)
 
+    def _subscribe(self, sock, subs=None):
+        if subs is None:
+            return
+        subs = self.encode_items(subs)
+        if isinstance(subs, string_types):
+            sock.zmqsock.setsockopt(zmq.SUBSCRIBE, subs)
+        else:
+            for sub in subs:
+                sock.zmqsock.setsockopt(zmq.SUBSCRIBE, sub)
+
 class Sub(Hub):
     """Hub for creating sockets of the SUB type."""
-
-    def _subscribe(self, socket, subscriptions):
-
-        if subscriptions is not None:
-            subs = self.encode_items(subscriptions)
-            if isinstance(subs, string_types):
-                socket.setsockopt(zmq.SUBSCRIBE, subs)
-            else:
-                for sub in subscriptions:
-                    socket.setsockopt(zmq.SUBSCRIBE, sub)
-
-    def _sub_socket(self, subscriptions):
-        socket = self.socket()
-        self._subscribe(socket, subscriptions)
-        return socket
 
     def socket(self):
         return self._wrap(self._socket(zmq.SUB))
 
     def connected(self, address, subscriptions=None):
-        """Create a SUB socket that connects to address."""
-        
-        socket = self._sub_socket(subscriptions)
+        socket = self.socket()
         socket.connect(address)
+        self._subscribe(socket, subscriptions)
         return socket
 
     def bound(self, address, subscriptions=None):
-        """Create a SUB socket bound to address."""
-        socket = self._sub_socket(subscriptions)
+        socket = self.socket()
         socket.bind(address)
+        self._subscribe(socket, subscriptions)
         return socket
 
 class Pub(Hub):
@@ -188,6 +188,8 @@ class NiceZmq(EncoderMixin):
     """Abstraction over a pyzmq context.
     """
 
+    sock_types = {"sub": Sub, "pub": Pub}
+
     def __init__(self, ctx=None, socket_class=Socket, encoding="utf-8"):
         """Initialize using the provided zeromq context.
         
@@ -200,15 +202,6 @@ class NiceZmq(EncoderMixin):
         else:
             self.ctx = ctx
         self.encoding = encoding
-        self._sub = Sub(self.ctx, encoding=encoding, socket_class=socket_class)
-        self._pub = Pub(self.ctx, encoding=encoding, socket_class=socket_class)
-
-    @property
-    def sub(self):
-        """Hub for creating zmq SUB sockets."""
-        return self._sub
-
-    @property
-    def pub(self):
-        """Hub for creating zmq PUB sockets."""
-        return self._pub
+        for attr, cls in self.sock_types.items():
+            setattr(self, attr,
+                    cls(self.ctx, encoding=encoding, socket_class=socket_class))

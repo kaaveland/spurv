@@ -2,29 +2,38 @@ from nose import tools as test
 from nicezmq import Hub, Sub, Pub, Socket
 from zmq import Context
 
-ctx = Context()
+class destroying(object):
 
-def test_can_create_a_hub():
-    Hub(ctx, Socket)
+    def __init__(self, thing):
+        self.thing = thing
 
-def test_can_create_a_sub():
-    Sub(ctx, Socket)
+    def __enter__(self):
+        return self.thing
 
-def test_can_create_a_pub():
-    Pub(ctx, Socket)
+    def __exit__(self, type_, value, traceback):
+        self.thing.destroy()
 
-sub = Sub(ctx, Socket)
-pub = Sub(ctx, Socket)
+def test_can_create_hubs():
+    with destroying(Context()) as ctx:
+        Hub(ctx)
+        Sub(ctx)
+        Pub(ctx)
 
 def test_hubs_should_create_wrapped_sockets():
-    test.assert_is_instance(pub.socket(), Socket)
-    test.assert_is_instance(sub.socket(), Socket)
+    with destroying(Context()) as ctx:
+        pub, sub = Pub(ctx, Socket), Sub(ctx, Socket)
+        with pub.socket() as sock:
+            test.assert_is_instance(sock, Socket)
+        with sub.socket() as sock:
+            test.assert_is_instance(sock, Socket)
 
-def test_bound_pub_sub_connected():
-    url = "tcp://127.0.0.1:30500"
-    publisher = pub.bound(url)
-    test.assert_is_not_none(publisher.zmqsock)
-    subscriber = sub.connected(url)
-    test.assert_is_not_none(subscriber.zmqsock)
-    publisher.send("test")
-    test.eq_(["test"], subscriber.recv())
+url = "inproc://testing"
+
+def test_pubsub_message_passing():
+    with destroying(Context()) as ctx:
+        pub, sub = Pub(ctx), Sub(ctx)
+        with pub.bound(url) as publisher, sub.connected(url, '') as subscriber:
+            publisher.send("test")
+            test.eq_(["test"], subscriber.recv())
+            publisher.send(["test", "test"])
+            test.eq_(["test", "test"], subscriber.recv())
