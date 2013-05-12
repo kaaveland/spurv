@@ -136,6 +136,19 @@ class Socket(EncoderMixin):
         self.zmqsock.bind(address)
         self._connected = True
 
+def listen_forever(socket, handler, decode=True):
+    with socket:
+        while True:
+            message = socket.recv(decode=decode)
+            handler(message)
+
+def reply_forever(socket, handler, decode=True):
+    with socket:
+        while True:
+            message = socket.recv(decode=decode)
+            reply = handler(message)
+            socket.send(reply)
+
 class Hub(EncoderMixin):
     """For creating sockets of some type and registering them."""
 
@@ -143,12 +156,15 @@ class Hub(EncoderMixin):
     def context(self):
         return self.ctx
 
+    @property
+    def handlers(self):
+        return self._handlers
+
     def __init__(self, ctx, socket_class=Socket, encoding="utf-8"):
         super(Hub, self).__init__()
         self.ctx = ctx
         self.encoding = encoding
         self.socket_class = socket_class
-        self._endpoints = {}
         self._handlers = {}
 
     def _wrap(self, socket):
@@ -182,6 +198,9 @@ class Hub(EncoderMixin):
         socket.connect(address)
         return socket
 
+def bound_first(handlers):
+    return reversed(sorted(handlers, key=lambda handler: handler["bind"]))
+
 class Sub(Hub):
     """Hub for creating sockets of the SUB type."""
 
@@ -197,6 +216,32 @@ class Sub(Hub):
         socket = self.bound(address)
         self._subscribe(socket, subscriptions)
         return socket
+
+    def listen(self, address, subs='', decode=True, bind=False):
+        def listener(handler):
+            self.handlers[handler.__name__] = {
+                "bind": bind,
+                "endpoint": address,
+                "handler": handler,
+                "decode": decode,
+                "subs": subs
+            }
+            return handler
+        return listener
+
+    def _start_handler(self, spawn, handler):
+        bind, addr = handler["bind"], handler["endpoint"]
+        fn = handler["handler"]
+        decode, subs = handler["decode"], handler["subs"]
+        if bind:
+            sock = self.bound_subscriber(addr, subs)
+        else:
+            sock = self.connected_subscriber(addr, subs)
+        return spawn(listen_forever, sock, fn, decode)
+
+    def start(self, spawn):
+        return [self._start_handler(spawn, handler) for handler in
+                bound_first(self.handlers.values())]
 
 class Pub(Hub):
     """Hub for creating sockets of the PUB type."""
@@ -264,3 +309,9 @@ class NiceZMQ(EncoderMixin):
     def rep(self):
         """Hub for REP sockets."""
         return self._rep
+
+    def start(self, spawn):
+        """Run forever, using spawn to create listeners."""
+
+        threads = self.sub.start(spawn)
+        return threads
