@@ -1,5 +1,5 @@
 from nose import tools as test
-from nicezmq import Hub, Sub, Pub, Socket
+from nicezmq import Hub, Sub, Pub, Socket, Req, Rep, u
 from zmq import Context
 
 class destroying(object):
@@ -18,6 +18,8 @@ def test_can_create_hubs():
         Hub(ctx)
         Sub(ctx)
         Pub(ctx)
+        Req(ctx)
+        Rep(ctx)
 
 def test_hubs_should_create_wrapped_sockets():
     with destroying(Context()) as ctx:
@@ -32,8 +34,20 @@ url = "inproc://testing"
 def test_pubsub_message_passing():
     with destroying(Context()) as ctx:
         pub, sub = Pub(ctx), Sub(ctx)
-        with pub.bound(url) as publisher, sub.connected(url, '') as subscriber:
+        with pub.bound(url) as publisher, sub.connected_subscriber(url, '') as subscriber:
             publisher.send("test")
             test.eq_(["test"], subscriber.recv())
             publisher.send(["test", "test"])
             test.eq_(["test", "test"], subscriber.recv())
+
+def test_repreq_message_passing():
+    with destroying(Context()) as ctx:
+        req, rep = Req(ctx), Rep(ctx)
+        with rep.bound(url) as reply, req.connected(url) as request:
+            message = [u("Testing"), u("Testing")]
+            request.send(message)
+            got = reply.recv(decode=True)
+            test.eq_(message, got)
+            reply.send(message)
+            got = request.recv(decode=True)
+            test.eq_(message, got)
