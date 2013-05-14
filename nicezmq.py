@@ -79,11 +79,17 @@ class Socket(EncoderMixin):
     def connected(self):
         return self._connected
 
-    def __init__(self, zmqsock, encoding="utf-8"):
+    @property
+    def port(self):
+        """This is only valid for TCP sockets."""
+        return self._port
+
+    def __init__(self, zmqsock, encoding="utf-8", port=None):
         super(Socket, self).__init__()
         self._zmqsock = zmqsock
         self.encoding = encoding
         self._connected = False
+        self._port = port
 
     def send(self, content, flags=0, copy=True, track=False):
         """This accepts unicode and will use the encoding set on this
@@ -130,11 +136,27 @@ class Socket(EncoderMixin):
 
     def connect(self, address):
         self.zmqsock.connect(address)
+        self._update_port(address)
         self._connected = True
 
     def bind(self, address):
         self.zmqsock.bind(address)
+        self._update_port(address)
         self._connected = True
+
+    def _update_port(self, address):
+        if address.startswith("tcp://"):
+            port = address.split(":")[-1]
+            try:
+                self._port = int(port)
+            except ValueError:
+                pass # Fine, wasn't something numeric
+
+    def bind_to_random_port(self, address, min_port=49152, max_port=65536, tries=100):
+        port = self.zmqsock.bind_to_random_port(address, min_port, max_port, tries)
+        self._connected = True
+        self._port = port
+        return port
 
 class Hub(EncoderMixin):
     """For creating sockets of some type and registering them."""
@@ -173,10 +195,13 @@ class Hub(EncoderMixin):
             for sub in subs:
                 sock.zmqsock.setsockopt(zmq.SUBSCRIBE, sub)
 
-    def bound(self, address):
+    def bound(self, address, random_port=False):
         """Ask this hub for a socket bound to an address."""
         socket = self.socket()
-        socket.bind(address)
+        if random_port:
+            socket.bind_to_random_port(address)
+        else:
+            socket.bind(address)
         return socket
 
     def connected(self, address):
@@ -390,7 +415,19 @@ class NiceZMQ(EncoderMixin):
         handlers.update(self.rep.handlers)
         return handlers
 
-    def endpoint(self, handler):
+    def url_to(self, handler):
         if not isinstance(handler, string_types):
             handler = handler.__name__
         return self.handlers[handler]["endpoint"]
+
+
+HUB_TYPES = [
+    Sub,
+    Pub,
+    Router,
+    Dealer,
+    Req,
+    Rep,
+    Pull,
+    Push
+]

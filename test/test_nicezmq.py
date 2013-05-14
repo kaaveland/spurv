@@ -18,11 +18,11 @@ def test_context_handling():
         test.assert_is_not_none(nzmq.context)
 
 @test.raises(KeyError)
-def test_crashes_on_erronous_endpoint():
+def test_crashes_on_erronous_url():
     with NiceZMQ() as nzmq:
-        nzmq.endpoint(test_context_handling)
+        nzmq.url_to(test_context_handling)
 
-def test_gets_address_for_registered_endpoint():
+def test_gets_url_to_registered_handler():
     with NiceZMQ() as nzmq:
         addr = "inproc://testing"
         @nzmq.sub.listen(addr)
@@ -31,5 +31,5 @@ def test_gets_address_for_registered_endpoint():
         @nzmq.rep.listen(addr)
         def bar(msg):
             return msg
-        test.eq_(addr, nzmq.endpoint(foo))
-        test.eq_(addr, nzmq.endpoint(bar))
+        test.eq_(addr, nzmq.url_to(foo))
+        test.eq_(addr, nzmq.url_to(bar))

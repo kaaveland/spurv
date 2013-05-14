@@ -20,8 +20,8 @@ def print_differently(message):
 def ack_message(message):
     return ["Ack"] + message
 
-with ctx.pub.bound(ctx.endpoint(print_message)) as pub,\
-      ctx.req.bound(ctx.endpoint(ack_message)) as req:
+with ctx.pub.bound(ctx.url_to(print_message)) as pub,\
+      ctx.req.bound(ctx.url_to(ack_message)) as req:
     def produce():
         while True:
             gevent.sleep(1)

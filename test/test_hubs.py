@@ -6,8 +6,8 @@
 # LICENSE, distributed as part of this software.
 
 from nose import tools as test
-from nicezmq import Hub, Sub, Pub, Socket, Req, Rep, u
-from zmq import Context
+from nicezmq import Hub, Sub, Pub, Socket, Req, Rep, u, HUB_TYPES
+from zmq import Context, ZMQError
 from mock import Mock
 
 class destroying(object):
@@ -23,19 +23,14 @@ class destroying(object):
 
 def test_can_create_hubs():
     with destroying(Context()) as ctx:
-        Hub(ctx)
-        Sub(ctx)
-        Pub(ctx)
-        Req(ctx)
-        Rep(ctx)
+        for hub_type in HUB_TYPES:
+            hub_type(ctx)
 
 def test_hubs_should_create_wrapped_sockets():
     with destroying(Context()) as ctx:
-        pub, sub = Pub(ctx, Socket), Sub(ctx, Socket)
-        with pub.socket() as sock:
-            test.assert_is_instance(sock, Socket)
-        with sub.socket() as sock:
-            test.assert_is_instance(sock, Socket)
+        for hub_type in HUB_TYPES:
+            hub = hub_type(ctx)
+            test.assert_is_instance(hub.socket(), Socket)
 
 url = "inproc://testing"
 
@@ -81,3 +76,14 @@ def test_rep_listen_for_howlers():
         not_none = object()
         spawner = Mock(return_value=not_none)
         test.assert_in(not_none, rep.start(spawner))
+
+def test_bind_random_port():
+    with destroying(Context()) as ctx:
+        rep = Rep(ctx)
+        socket = rep.bound("tcp://*", True)
+        test.assert_is_not_none(socket.port)
+        try:
+            rep.bound("tcp://*:{}".format(socket.port))
+            test.fail("Port should already be bound")
+        except ZMQError:
+            pass # Expected
