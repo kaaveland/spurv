@@ -9,7 +9,7 @@ from setuptools import setup
 setup(
 
     name = "nicezmq",
-    version = "0.1.1",
+    version = "0.1.0",
 
     install_requires = [
         "pyzmq==13.1.0",

@@ -284,11 +284,33 @@ class Rep(Hub, HandlerMixin):
     def start(self, spawn):
         return self.start_handling(spawn, reply_forever)
 
+class Router(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.ROUTER))
+
+class Dealer(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.DEALER))
+
+class Pull(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.PULL))
+
+class Push(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.PUSH))
+
 class NiceZMQ(EncoderMixin):
     """Abstraction over a pyzmq context.
     """
 
-    sock_types = {"_sub": Sub, "_pub": Pub, "_req": Req, "_rep": Rep}
+    sock_types = {"_sub": Sub, "_pub": Pub, "_req": Req, "_rep": Rep,
+                  "_router": Router, "_dealer": Dealer, "_pull": Pull,
+                  "_push": Push}
 
     def __init__(self, ctx=None, socket_class=Socket, encoding="utf-8"):
         """Initialize using the provided zeromq context.
@@ -338,6 +360,22 @@ class NiceZMQ(EncoderMixin):
     def rep(self):
         """Hub for REP sockets."""
         return self._rep
+
+    @property
+    def router(self):
+        return self._router
+
+    @property
+    def dealer(self):
+        return self._dealer
+
+    @property
+    def pull(self):
+        return self._pull
+
+    @property
+    def push(self):
+        return self._push
 
     def start(self, spawn):
         """Run forever, using spawn to create listeners."""

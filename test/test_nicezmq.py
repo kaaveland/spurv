@@ -27,7 +27,7 @@ def test_gets_address_for_registered_endpoint():
         addr = "inproc://testing"
         @nzmq.sub.listen(addr)
         def foo(msg):
-            pass
+            return msg
         @nzmq.rep.listen(addr)
         def bar(msg):
             return msg
