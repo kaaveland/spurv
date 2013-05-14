@@ -1,2 +1,2 @@
-test: nicezmq.py
-	nosetests --with-coverage --cover-branches --cover-package nicezmq
+test: radzmq.py
+	nosetests --with-coverage --cover-branches --cover-package radzmq

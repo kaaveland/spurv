@@ -1,7 +1,7 @@
 # coding=utf-8
 # Copyright (c) 2013 Robin Kåveland Hansen
 #
-# This file is a part of nicezmq. It is distributed under the terms
+# This file is a part of radzmq. It is distributed under the terms
 # of the modified BSD license. The full license is available in
 # LICENSE, distributed as part of this software.
 
@@ -329,7 +329,7 @@ class Push(Hub):
     def socket(self):
         return self._wrap(self._socket(zmq.PUSH))
 
-class NiceZMQ(EncoderMixin):
+class RadZMQ(EncoderMixin):
     """Abstraction over a pyzmq context.
     """
 
@@ -343,7 +343,7 @@ class NiceZMQ(EncoderMixin):
         Arguments:
         - `ctx`: A zeromq context.
         """
-        super(NiceZMQ, self).__init__()
+        super(RadZMQ, self).__init__()
         if ctx is None:
             self.ctx = zmq.Context()
         else:

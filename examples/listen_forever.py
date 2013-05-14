@@ -1,12 +1,12 @@
 """
-Simple example of configuration with nicezmq decorators.
+Simple example of configuration with radzmq decorators.
 """
-from nicezmq import NiceZMQ
+from radzmq import RadZMQ
 import gevent
 import random
 from zmq import green as zmq
 
-ctx = NiceZMQ(zmq.Context())
+ctx = RadZMQ(zmq.Context())
 
 @ctx.sub.listen("inproc://testing", subs="one")
 def print_message(message):

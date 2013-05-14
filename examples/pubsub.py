@@ -1,10 +1,10 @@
 """
-Simple example of using nicezmq.
+Simple example of using radzmq.
 """
-from nicezmq import NiceZMQ
+from radzmq import RadZMQ
 import random
 
-ctx = NiceZMQ()
+ctx = RadZMQ()
 
 url = "inproc://publishing"
 

@@ -1,14 +1,14 @@
 # coding=utf-8
 # Copyright (c) 2013 Robin Kåveland Hansen
 #
-# This file is a part of nicezmq. It is distributed under the terms
+# This file is a part of radzmq. It is distributed under the terms
 # of the modified BSD license. The full license is available in
 # LICENSE, distributed as part of this software.
 from setuptools import setup
 
 setup(
 
-    name = "nicezmq",
+    name = "radzmq",
     version = "0.1.0",
 
     install_requires = [
@@ -24,7 +24,7 @@ setup(
     ],
 
     py_modules = [
-        "nicezmq",
+        "radzmq",
     ],
     
     author = "Robin Kåveland Hansen",
