@@ -16,7 +16,6 @@ necessary.
 """
 
 import sys
-
 import zmq
 
 if sys.version_info[0] == 2:
@@ -419,7 +418,6 @@ class RadZMQ(EncoderMixin):
         if not isinstance(handler, string_types):
             handler = handler.__name__
         return self.handlers[handler]["endpoint"]
-
 
 HUB_TYPES = [
     Sub,
