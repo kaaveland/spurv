@@ -4,7 +4,6 @@
 # This file is a part of radzmq. It is distributed under the terms
 # of the modified BSD license. The full license is available in
 # LICENSE, distributed as part of this software.
-
 """
 Provides a few basic abstractions on top of pyzmq.
 
