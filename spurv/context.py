@@ -17,7 +17,7 @@ necessary.
 import zmq
 from . import hub, enc
 
-class RadZMQ(enc.EncoderMixin):
+class Spurv(enc.EncoderMixin):
     """Abstraction over a pyzmq context.
     """
 
@@ -27,23 +27,29 @@ class RadZMQ(enc.EncoderMixin):
         Arguments:
         - `ctx`: A zeromq context.
         """
-        super(RadZMQ, self).__init__()
+        super(Spurv, self).__init__()
         if ctx is None:
             self.ctx = zmq.Context()
         else:
             self.ctx = ctx
         self.encoding = encoding
+        self._hubs = []
         def make(hubcls):
-            return hubcls(self.ctx, socket_class, self.encoding)
+            _hub = hubcls(self.ctx, socket_class, self.encoding)
+            self._hubs.append(_hub)
+            return _hub
         self.pub = make(hub.Pub)
         self.sub = make(hub.Sub)
+        self.xpub = make(hub.XPub)
+        self.xsub = make(hub.XSub)
         self.rep = make(hub.Rep)
         self.req = make(hub.Req)
         self.pull = make(hub.Pull)
         self.push = make(hub.Push)
         self.router = make(hub.Router)
         self.dealer = make(hub.Dealer)
-        
+        self.pair = make(hub.Pair)
+
     def destroy(self):
         self.ctx.destroy()
 
@@ -60,20 +66,21 @@ class RadZMQ(enc.EncoderMixin):
         return threads
 
     @property
-    def handlers(self):
-        handlers = {}
-        handlers.update(self.sub.handlers)
-        handlers.update(self.rep.handlers)
-        return handlers
-
-    @property
     def context(self):
         return self.ctx
 
     def url_to(self, handler):
-        if not enc.is_string(handler):
-            handler = handler.__name__
-        return self.handlers[handler]["endpoint"]
+        for container in self._hubs:
+            try:
+                return container.url_to(handler)
+            except KeyError:
+                pass
+        raise KeyError("Handler not registered: {0}".format(repr(handler)))
+
+    def handlers(self):
+        for container in self._hubs:
+            for handler in container.handlers:
+                yield handler
 
     def __repr__(self):
 

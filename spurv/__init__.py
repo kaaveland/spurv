@@ -14,4 +14,4 @@ to the underlying pyzmq object to enable more advanced usage if
 necessary.
 """
 
-from .context import RadZMQ
+from .context import Spurv

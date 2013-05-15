@@ -1,10 +1,10 @@
 """
 Simple example of using spurv.
 """
-from spurv import RadZMQ
+from spurv import Spurv
 import random
 
-ctx = RadZMQ()
+ctx = Spurv()
 
 url = "inproc://publishing"
 

@@ -4,31 +4,30 @@
 # This file is a part of spurv. It is distributed under the terms
 # of the modified BSD license. The full license is available in
 # LICENSE, distributed as part of this software.
-from .. import RadZMQ
+from .. import Spurv
 from nose.tools import raises
 
 def test_constructing_radmq_object():
-    rzmq = RadZMQ()
-    assert rzmq.context is not None
-    assert rzmq.handlers is not None
+    ctx = Spurv()
+    assert ctx.context is not None
 
 def test_context_handling():
-    with RadZMQ() as rzmq:
-        assert rzmq.context is not None
+    with Spurv() as spurv:
+        assert spurv.context is not None
 
 @raises(KeyError)
 def test_crashes_on_erronous_url():
-    with RadZMQ() as rzmq:
-        rzmq.url_to(test_context_handling)
+    with Spurv() as spurv:
+        spurv.url_to(test_context_handling)
 
 def test_gets_url_to_registered_handler():
-    with RadZMQ() as rzmq:
+    with Spurv() as spurv:
         addr = "inproc://testing"
-        @rzmq.sub.listen(addr)
+        @spurv.sub.listen(addr)
         def foo(msg):
             return msg
-        @rzmq.rep.listen(addr)
+        @spurv.rep.listen(addr)
         def bar(msg):
             return msg
-        assert addr == rzmq.url_to(foo)
-        assert addr == rzmq.url_to(bar)
+        assert addr == spurv.url_to(foo)
+        assert addr == spurv.url_to(bar)

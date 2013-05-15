@@ -8,6 +8,7 @@
 Abstractions for creating ZMQ sockets of various type and some
 configuration hooks / decorators.
 """
+import functools
 import zmq
 
 from . import enc, handler
@@ -37,6 +38,10 @@ class Socket(enc.EncoderMixin):
     @property
     def connected(self):
         return self._connected
+
+    @property
+    def closed(self):
+        return not self.connected
 
     @property
     def port(self):
@@ -122,12 +127,12 @@ class HubRegistry(type):
     registered = {}
 
     def __init__(cls, name, bases, dict_):
-        
+
         super(HubRegistry, cls).__init__(name, bases, dict_)
         if name != "Hub":
             HubRegistry.registered[name] = cls
 
-class Hub(enc.EncoderMixin):
+class Hub(enc.EncoderMixin, handler.HandlerMixin):
     """For creating sockets of some type and registering them."""
 
     __metaclass__ = HubRegistry
@@ -136,16 +141,11 @@ class Hub(enc.EncoderMixin):
     def context(self):
         return self.ctx
 
-    @property
-    def handlers(self):
-        return self._handlers
-
     def __init__(self, ctx, socket_class=Socket, encoding="utf-8"):
         super(Hub, self).__init__()
         self.ctx = ctx
         self.encoding = encoding
         self.socket_class = socket_class
-        self._handlers = {}
 
     def _wrap(self, socket):
         return self.socket_class(socket, encoding=self.encoding)
@@ -180,7 +180,7 @@ class Hub(enc.EncoderMixin):
         socket = self.socket()
         socket.connect(address)
         return socket
-        
+
 class Pub(Hub):
     """Hub for creating sockets of the PUB type."""
 
@@ -197,16 +197,8 @@ class Rep(Hub, handler.HandlerMixin):
     def socket(self):
         return self._wrap(self._socket(zmq.REP))
 
-    def listen(self, address, decode=True, bind=True):
-        def listener(handler):
-            self.handlers[handler.__name__] = {
-                "bind": bind,
-                "decode": decode,
-                "endpoint": address,
-                "handler": handler
-            }
-            return handler
-        return listener
+    def listen(self, addr, decode=True, bind=True):
+        return functools.partial(self._add_handler, addr, bind, decode)
 
     def start(self, spawn):
         return self.start_handling(spawn, handler.reply_forever)
@@ -247,19 +239,25 @@ class Sub(Hub, handler.HandlerMixin):
         self._subscribe(socket, subscriptions)
         return socket
 
-    def listen(self, address, subs='', decode=True, bind=False):
-        def listener(handler):
-            self.handlers[handler.__name__] = {
-                "bind": bind,
-                "endpoint": address,
-                "handler": handler,
-                "decode": decode,
-                "subs": subs
-            }
-            return handler
-        return listener
+    def listen(self, addr, bind=True, decode=True, subs=None):
+        return functools.partial(self._add_handler, addr, bind, decode, subs=subs)
 
     def start(self, spawn):
         return self.start_handling(spawn, handler.listen_forever)
+
+class XPub(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.XPUB))
+
+class XSub(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.XSUB))
+
+class Pair(Hub):
+
+    def socket(self):
+        return self._wrap(self._socket(zmq.PAIR))
 
 HUB_TYPES = HubRegistry.registered

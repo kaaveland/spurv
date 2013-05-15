@@ -89,10 +89,7 @@ def test_sub_listen_for_howlers():
         @sub.listen("inproc://test", bind=True)
         def foo():
             pass
-        assert foo.__name__ in sub.handlers
-        not_none = object()
-        spawner = Mock(return_value=not_none)
-        assert not_none in sub.start(spawner)
+        assert sub.handler_by_name(foo) is not None
 
 def test_rep_listen_for_howlers():
     with destroying(Context()) as ctx:
@@ -100,10 +97,7 @@ def test_rep_listen_for_howlers():
         @rep.listen("inproc://test")
         def foo():
             pass
-        assert foo.__name__ in rep.handlers
-        not_none = object()
-        spawner = Mock(return_value=not_none)
-        assert not_none in rep.start(spawner)
+        assert rep.handler_by_name(foo) is not None
 
 def test_bind_random_port():
     with destroying(Context()) as ctx:

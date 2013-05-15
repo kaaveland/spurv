@@ -1,12 +1,12 @@
 """
 Simple example of configuration with spurv decorators.
 """
-from spurv import RadZMQ
+from spurv import Spurv
 import gevent
 import random
 from zmq import green as zmq
 
-ctx = RadZMQ(zmq.Context())
+ctx = Spurv(zmq.Context())
 
 @ctx.sub.listen("inproc://testing", subs="one")
 def print_message(message):
