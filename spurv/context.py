@@ -61,9 +61,12 @@ class Spurv(enc.EncoderMixin):
 
     def start(self, spawn):
         """Run forever, using spawn to create listeners."""
-        threads = self.sub.start(spawn)
-        threads.extend(self.rep.start(spawn))
-        return threads
+        return list(self._start(spawn))
+
+    def _start(self, spawn):
+        for hub in self._hubs:
+            for handler in hub.handlers:
+                yield spawn(handler.start)
 
     @property
     def context(self):

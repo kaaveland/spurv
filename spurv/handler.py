@@ -7,7 +7,6 @@
 """
 Registering and starting handlers on sockets.
 """
-
 from .enc import is_string
 
 def reply_forever(socket, handler, decode=True):
@@ -36,14 +35,28 @@ class Handler(object):
     def socket(self):
         if self.bind:
             if self.subs is not None:
-                return self.hub.bound(self.addr, self.subs)
+                return self.hub.bound_subscriber(self.addr, self.subs)
             else:
                 return self.hub.bound(self.addr)
         else:
             if self.subs is not None:
-                return self.hub.connected(self.addr, self.subs)
+                return self.hub.connected_subscriber(self.addr, self.subs)
             else:
                 return self.hub.connected(self.addr)
+
+    def _start(self):
+        socket = self.socket()
+        if self.subs is not None:
+            listen_forever(socket, self.fn, self.decode)
+        else:
+            reply_forever(socket, self.fn, self.decode)
+
+    def start(self):
+        self._start()
+
+    def __repr__(self):
+        return "<Handler({0}, {1}, {2})>".format(
+            self.addr, self.hub, self.bind)
 
 class HandlerMixin(object):
 
@@ -75,7 +88,8 @@ class HandlerMixin(object):
         return handler.addr
 
     def _add_handler(self, addr, bind, decode, fn, subs=None):
-        handler = Handler(self, addr, bind, decode, fn, subs)
+        handler = Handler(hub=self, addr=addr, bind=bind,
+                          decode=decode, fn=fn, subs=subs)
         self.handlers.append(handler)
         self.addr_mapping[addr] = handler
         self.name_mapping[fn.__name__] = handler

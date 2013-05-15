@@ -34,7 +34,6 @@ with ctx.pub.bound(ctx.url_to(print_message)) as pub,\
             req.send(str(random.random()))
             gevent.sleep(1)
             print "Requestor", req.recv()
-
     greenlets = ctx.start(gevent.spawn_link)
     greenlets.append(gevent.spawn_link(produce))
     greenlets.append(gevent.spawn_link(request))

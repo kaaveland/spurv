@@ -239,7 +239,7 @@ class Sub(Hub, handler.HandlerMixin):
         self._subscribe(socket, subscriptions)
         return socket
 
-    def listen(self, addr, bind=True, decode=True, subs=None):
+    def listen(self, addr, bind=False, decode=True, subs=None):
         return functools.partial(self._add_handler, addr, bind, decode, subs=subs)
 
     def start(self, spawn):
