@@ -1,6 +1,6 @@
-* Remaining socket types [0/2]
-** TODO PULL/PUSH
-** TODO ROUTER/DEALER
+* Remaining socket types [2/4]
+** DONE PULL/PUSH
+** DONE ROUTER/DEALER
 ** TODO XPUB/XSUB
 ** TODO PAIR
 * Abstractions for starting listeners
@@ -15,3 +15,4 @@
 ** @context.rep.listener(bound=url)
 ** @foo.accepts(Klass) ?
 ** @foo.responds(Klass2) ?
+* More on trello.
