@@ -1,7 +1,7 @@
 """
-Simple example of configuration with radzmq decorators.
+Simple example of configuration with spurv decorators.
 """
-from radzmq import RadZMQ
+from spurv import RadZMQ
 import gevent
 import random
 from zmq import green as zmq

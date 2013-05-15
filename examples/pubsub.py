@@ -1,7 +1,7 @@
 """
-Simple example of using radzmq.
+Simple example of using spurv.
 """
-from radzmq import RadZMQ
+from spurv import RadZMQ
 import random
 
 ctx = RadZMQ()
