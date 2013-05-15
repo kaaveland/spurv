@@ -23,7 +23,7 @@ setup(
         "coverage==3.6",
     ],
 
-    py_modules = [
+    packages = [
         "radzmq",
     ],
     

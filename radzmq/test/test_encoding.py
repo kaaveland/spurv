@@ -5,7 +5,7 @@
 # of the modified BSD license. The full license is available in
 # LICENSE, distributed as part of this software.
 from nose.tools import raises
-from radzmq import u, bytes_type, EncoderMixin
+from ..enc import u, bytes_type, EncoderMixin
 
 encoder = EncoderMixin()
 

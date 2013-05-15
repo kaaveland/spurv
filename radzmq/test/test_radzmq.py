@@ -4,7 +4,7 @@
 # This file is a part of radzmq. It is distributed under the terms
 # of the modified BSD license. The full license is available in
 # LICENSE, distributed as part of this software.
-from radzmq import RadZMQ
+from .. import RadZMQ
 from nose.tools import raises
 
 def test_constructing_radmq_object():
